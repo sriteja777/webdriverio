@@ -52,10 +52,10 @@ export default class InsightsHandler {
     }
 
     async beforeHook (test: Frameworks.Test, context: any) {
-        console.log("came before hook")
+        console.log('came before hook')
 
         if (this._framework === 'mocha') {
-            console.log("came inside mocha")
+            console.log('came inside mocha')
             const fullTitle = `${test.parent} - ${test.title}`
             const hookId = uuidv4()
             this._tests[fullTitle] = {
@@ -63,14 +63,14 @@ export default class InsightsHandler {
                 startedAt: (new Date()).toISOString()
             }
 
-            console.log("sending data with ", fullTitle, uuidv4, this._tests[fullTitle])
+            console.log('sending data with ', fullTitle, uuidv4, this._tests[fullTitle])
             this.attachHookData(context, hookId)
             await this.sendTestRunEvent(test, 'HookRunStarted')
         }
     }
 
     async afterHook (test: Frameworks.Test, result: Frameworks.TestResult) {
-        console.log("came after hook")
+        console.log('came after hook')
         if (this._framework === 'mocha') {
             const fullTitle = getUniqueIdentifier(test)
             if (this._tests[fullTitle]) {
@@ -137,12 +137,12 @@ export default class InsightsHandler {
     }
 
     async afterScenario (world: ITestCaseHookParameter) {
-        console.log("came after scenario")
+        console.log('came after scenario')
         await this.sendTestRunEventForCucumber(world, 'TestRunFinished')
     }
 
     async beforeStep (step: Frameworks.PickleStep, scenario: Pickle) {
-        console.log("came before step")
+        console.log('came before step')
         const uniqueId = getUniqueIdentifierForCucumber({ pickle: scenario } as ITestCaseHookParameter)
         const testMetaData = this._tests[uniqueId] || { steps: [] }
 
@@ -161,7 +161,7 @@ export default class InsightsHandler {
     }
 
     async afterStep (step: Frameworks.PickleStep, scenario: Pickle, result: Frameworks.PickleResult) {
-        console.log("came after step")
+        console.log('came after step')
         const uniqueId = getUniqueIdentifierForCucumber({ pickle: scenario } as ITestCaseHookParameter)
         const testMetaData = this._tests[uniqueId] || { steps: [] }
 
@@ -315,8 +315,7 @@ export default class InsightsHandler {
             framework: this._framework
         }
 
-        console.log("came sendTestRunEvent with testData, ", testData, " and with result as ", results)
-
+        console.log('came sendTestRunEvent with testData, ', testData, ' and with result as ', results)
 
         if ((eventType === 'TestRunFinished' || eventType === 'HookRunFinished') && results) {
             const { error, passed } = results
@@ -357,7 +356,7 @@ export default class InsightsHandler {
         } else {
             uploadData.test_run = testData
         }
-        console.log("final updating with data, ", uploadData)
+        console.log('final updating with data, ', uploadData)
 
         const req = this._requestQueueHandler.add(uploadData)
         if (req.proceed && req.data) {
