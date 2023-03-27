@@ -86,6 +86,7 @@ export default class InsightsHandler {
 
     async beforeTest (test: Frameworks.Test) {
         const fullTitle = getUniqueIdentifier(test)
+        console.log(`came before test for test ${fullTitle} with data ${JSON.stringify(test, null, 4)}`)
         this._tests[fullTitle] = {
             uuid: uuidv4(),
             startedAt: (new Date()).toISOString()
@@ -359,6 +360,8 @@ export default class InsightsHandler {
         console.log('final updating with data, ', uploadData)
 
         const req = this._requestQueueHandler.add(uploadData)
+        // console.log('request data, ', req.data)
+
         if (req.proceed && req.data) {
             await uploadEventData(req.data, req.url)
         }
