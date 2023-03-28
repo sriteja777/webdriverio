@@ -1,4 +1,4 @@
-import type { SuiteStats, TestStats, RunnerStats } from '@wdio/reporter'
+import type { SuiteStats, TestStats, RunnerStats, HookStats } from '@wdio/reporter'
 import WDIOReporter from '@wdio/reporter'
 import type { Capabilities, Options } from '@wdio/types'
 
@@ -26,10 +26,24 @@ export default class TestReporter extends WDIOReporter {
     }
 
     onSuiteStart (suiteStats: SuiteStats) {
+        console.log('came on suite start, suite stats are', suiteStats)
         this._suiteName = suiteStats.file
     }
 
-    async onTestSkip (testStats: TestStats) {
+    onSuiteEnd(suiteStats: SuiteStats) {
+        // super.onSuiteEnd(suiteStats);
+        console.log('came on suite end, suite stats are', suiteStats)
+
+    }
+
+    onRunnerEnd(runnerStats: RunnerStats) {
+        console.log('came on runner end, runner stats are', runnerStats)
+
+        // super.onRunnerEnd(runnerStats);
+    }
+
+    async onTestSkip(testStats: TestStats) {
+        console.log('came on test skip, test stats are', testStats)
         // cucumber steps call this method. We don't want step skipped state so skip for cucumber
         const framework = this._config?.framework
 
@@ -77,4 +91,72 @@ export default class TestReporter extends WDIOReporter {
             }
         }
     }
+
+    onTestFail(testStats: TestStats) {
+        // super.onTestFail(testStats);
+        console.log('came test fail, test stats are', testStats, 'json is ', JSON.stringify(testStats))
+    }
+
+    onTestEnd(testStats: TestStats) {
+        console.log('came test end, test stats are', testStats, ' json is ', JSON.stringify(testStats))
+    }
+
+    onHookEnd(hookStats: HookStats) {
+        console.log('came hook end, hook stats are', hookStats, ' json is ', JSON.stringify(hookStats))
+    }
+
+    onHookStart(hookStats: HookStats) {
+        // super.onHookStart(hookStat);
+        console.log('came hook start, hook stats are', hookStats, ' json is ', JSON.stringify(hookStats))
+    }
+
+    // onTestStart(testStats: TestStats) {
+    //     console.log("came test start, test stats are", testStats, " json is ", JSON.stringify(testStats))
+    //     const framework = this._config?.framework
+    //
+    //     if (this._observability && framework !== 'cucumber') {
+    //         const testData: TestData = {
+    //             uuid: uuidv4(),
+    //             type: testStats.type,
+    //             name: testStats.title,
+    //             body: {
+    //                 lang: 'webdriverio',
+    //                 code: null
+    //             },
+    //             scope: testStats.fullTitle,
+    //             scopes: getHierarchy(testStats.fullTitle),
+    //             identifier: testStats.fullTitle,
+    //             file_name: this._suiteName,
+    //             location: this._suiteName,
+    //             started_at: (new Date()).toISOString(),
+    //             framework: framework,
+    //             finished_at: (new Date()).toISOString(),
+    //             duration_in_ms: testStats._duration,
+    //             retries: { limit:0, attempts: 0 },
+    //             result: testStats.state,
+    //         }
+    //
+    //         const cloudProvider = getCloudProvider({ options: { hostname: this._config?.hostname } } as WebdriverIO.Browser | WebdriverIO.MultiRemoteBrowser)
+    //         testData.integrations = {}
+    //
+    //         testData.integrations[cloudProvider] = {
+    //             capabilities: this._capabilities,
+    //             session_id: this._sessionId,
+    //             browser: this._capabilities?.browserName,
+    //             browser_version: this._capabilities?.browserVersion,
+    //             platform: this._capabilities?.platformName,
+    //         }
+    //
+    //         const uploadData = {
+    //             event_type: 'TestRunFinished',
+    //             test_run: testData
+    //         }
+    //
+    //         const req = this._requestQueueHandler.add(uploadData)
+    //         if (req.proceed && req.data) {
+    //             await uploadEventData(req.data, req.url)
+    //         }
+    //     }
+    //
+    // }
 }
