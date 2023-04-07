@@ -136,6 +136,7 @@ export default class BrowserstackService implements Services.ServiceInstance {
     }
 
     async afterHook (test: Frameworks.Test, context: unknown, result: Frameworks.TestResult) {
+        console.log('in after hook of service', )
         await this._insightsHandler?.afterHook(test, result)
     }
 
