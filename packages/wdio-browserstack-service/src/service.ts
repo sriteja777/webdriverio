@@ -171,9 +171,12 @@ export default class BrowserstackService implements Services.ServiceInstance {
                 suiteTitle = getParentSuiteName(this._suiteTitle, testSuiteName)
             }
         }
-
-        await this._setSessionName(suiteTitle, test)
-        await this._setAnnotation(`Test: ${test.fullName ?? test.title}`)
+        try {
+            await this._setSessionName(suiteTitle, test)
+            await this._setAnnotation(`Test: ${test.fullName ?? test.title}`)
+        } catch (e) {
+            log.error(`Error in setting session status : ${e}`)
+        }
         await this._insightsHandler?.beforeTest(test)
     }
 
