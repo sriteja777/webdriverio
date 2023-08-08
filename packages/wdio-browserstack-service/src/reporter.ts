@@ -59,6 +59,7 @@ class _TestReporter extends WDIOReporter {
     }
 
     onSuiteStart (suiteStats: SuiteStats) {
+        // console.log('onsuiteStart', suiteStats)
         let filename = suiteStats.file
         if (this._config?.framework === 'jasmine') {
             try {
@@ -79,6 +80,8 @@ class _TestReporter extends WDIOReporter {
     }
 
     onSuiteEnd() {
+        // console.log('onsuiteStart', )
+
         this._suites.pop()
     }
 

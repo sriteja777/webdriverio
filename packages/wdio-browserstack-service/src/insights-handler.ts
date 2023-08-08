@@ -4,6 +4,7 @@ import type { Capabilities, Frameworks } from '@wdio/types'
 import type { BeforeCommandArgs, AfterCommandArgs } from '@wdio/reporter'
 
 import { v4 as uuidv4 } from 'uuid'
+import type { Feature } from './cucumber-types.js'
 import type { Pickle, ITestCaseHookParameter } from './cucumber-types.js'
 import TestReporter from './reporter.js'
 
@@ -35,6 +36,13 @@ class _InsightsHandler {
     private _suiteFile?: string
     private _requestQueueHandler = RequestQueueHandler.getInstance()
     private _currentTest: any = {}
+    private _currentHook: any = {}
+    private _scenarios: any[] = []
+    private _features: any[] = []
+    private _steps: any[] = []
+    private _scenariosStarted: boolean = false
+    private _stepsStarted: boolean = false
+    private _worlds: any[] = []
 
     constructor (private _browser: WebdriverIO.Browser | WebdriverIO.MultiRemoteBrowser, isAppAutomate?: boolean, private _framework?: string) {
         this._requestQueueHandler.start()
@@ -84,6 +92,11 @@ class _InsightsHandler {
             return
         }
 
+        if (this._framework === 'cucumber') {
+            await this.processCucumberHook(test)
+            return
+        }
+
         const fullTitle = getUniqueIdentifier(test, this._framework)
 
         const hookId = uuidv4()
@@ -91,12 +104,19 @@ class _InsightsHandler {
             uuid: hookId,
             startedAt: (new Date()).toISOString()
         }
+        this._currentHook = {
+            uuid: hookId
+        }
         this.attachHookData(context, hookId)
         await this.sendTestRunEvent(test, 'HookRunStarted')
     }
 
     async afterHook (test: Frameworks.Test, result: Frameworks.TestResult) {
         if (!frameworkSupportsHook('after', this._framework)) {
+            return
+        }
+
+        if (this._framework === 'cucumber') {
             return
         }
 
@@ -108,6 +128,10 @@ class _InsightsHandler {
                 finishedAt: (new Date()).toISOString()
             }
         }
+        if (this._currentHook.uuid === this._tests[fullTitle].uuid) {
+            this._currentHook.finished = true
+        }
+
         await this.sendTestRunEvent(test, 'HookRunFinished', result)
 
         const hookType = getHookType(test.title)
@@ -179,11 +203,37 @@ class _InsightsHandler {
       * Cucumber Only
       */
 
+    async processCucumberHook(test: any) {
+        let hookType = null
+        if (!test) {
+            // It is a beforeAll or afterAll hook
+            hookType = this._scenariosStarted ? 'AFTER_ALL' : 'BEFORE_ALL'
+        } else if (!this._stepsStarted) {
+            hookType = 'BEFORE_EACH'
+        } else if (this._steps.length > 0) {
+            // beforeStep or afterStep
+        } else {
+            hookType = 'AFTER_EACH'
+        }
+
+        console.log('hooktype is ', hookType)
+    }
+
+    async beforeFeature(uri: string, feature: Feature) {
+        this._scenariosStarted = false
+        this._features.push(feature)
+    }
+
     async beforeScenario (world: ITestCaseHookParameter) {
+
         const uuid = uuidv4()
         this._currentTest = {
             uuid
         }
+        this._worlds.push(world)
+        this._scenarios.push(world.pickle)
+        this._scenariosStarted = true
+        this._stepsStarted = false
         const pickleData = world.pickle
         const gherkinDocument = world.gherkinDocument
         const featureData = gherkinDocument.feature
@@ -212,10 +262,13 @@ class _InsightsHandler {
     }
 
     async afterScenario (world: ITestCaseHookParameter) {
+        this._scenarios.pop()
         await this.sendTestRunEventForCucumber(world, 'TestRunFinished')
     }
 
     async beforeStep (step: Frameworks.PickleStep, scenario: Pickle) {
+        this._stepsStarted = true
+        this._steps.push(step)
         const uniqueId = getUniqueIdentifierForCucumber({ pickle: scenario } as ITestCaseHookParameter)
         const testMetaData = this._tests[uniqueId] || { steps: [] }
 
@@ -234,6 +287,7 @@ class _InsightsHandler {
     }
 
     async afterStep (step: Frameworks.PickleStep, scenario: Pickle, result: Frameworks.PickleResult) {
+        this._steps.pop()
         const uniqueId = getUniqueIdentifierForCucumber({ pickle: scenario } as ITestCaseHookParameter)
         const testMetaData = this._tests[uniqueId] || { steps: [] }
 
@@ -281,11 +335,11 @@ class _InsightsHandler {
 
     appendTestItemLog = async (log: any) => {
         try {
-            // if (this.current_hook && !this.current_hook.markedStatus) {
-            //     log.hook_run_uuid = this.current_hook.hookAnalyticsId;
-            // }
-
-            if ( this._currentTest) {
+            if (this._currentHook && !this._currentHook.finished) {
+                if (this._framework === 'mocha' || this._framework === 'cucumber') {
+                    log.hook_run_uuid = this._currentHook.uuid
+                }
+            } else if (this._currentTest) {
                 if (this._framework === 'mocha' || this._framework === 'cucumber') {
                     log.test_run_uuid = this._currentTest.uuid
                 } else if (this._framework === 'jasmine') {
@@ -296,6 +350,7 @@ class _InsightsHandler {
                     }
                 }
             }
+
             if (log.hook_run_uuid || log.test_run_uuid) {
                 const req = this._requestQueueHandler.add({
                     event_type: 'LogCreated',

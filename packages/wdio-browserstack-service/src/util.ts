@@ -17,7 +17,13 @@ import PerformanceTester from './performance-tester.js'
 
 import type { UserConfig, UploadType, LaunchResponse, BrowserstackConfig } from './types.js'
 import type { ITestCaseHookParameter } from './cucumber-types.js'
-import { BROWSER_DESCRIPTION, DATA_ENDPOINT, DATA_EVENT_ENDPOINT, DATA_SCREENSHOT_ENDPOINT } from './constants.js'
+import {
+    BROWSER_DESCRIPTION,
+    consoleHolder,
+    DATA_ENDPOINT,
+    DATA_EVENT_ENDPOINT,
+    DATA_SCREENSHOT_ENDPOINT
+} from './constants.js'
 import RequestQueueHandler from './request-handler.js'
 import CrashReporter from './crash-reporter.js'
 
@@ -573,10 +579,16 @@ export function shouldAddServiceVersion(config: Options.Testrunner, testObservab
     return true
 }
 
+const debug = (text:any) => {
+    consoleHolder.log(`\n[${(new Date()).toISOString()}][ OBSERVABILITY ] ${text}\n`)
+}
+
 export async function batchAndPostEvents (eventUrl: string, kind: string, data: UploadType[]) {
     if (!process.env.BS_TESTOPS_BUILD_COMPLETED || !process.env.BS_TESTOPS_JWT) {
         return
     }
+
+    debug('Sending events from batch ' + util.inspect(data, { depth: 6 }))
 
     try {
         const url = `${DATA_ENDPOINT}/${eventUrl}`
@@ -649,6 +661,9 @@ export function getObservabilityBuildTags(options: BrowserstackConfig & Options.
 
 export function frameworkSupportsHook(hook: string, framework?: string) {
     if (framework === 'mocha' && (hook === 'before' || hook === 'after' || hook === 'beforeEach' || hook === 'afterEach')) {
+        return true
+    }
+    if (framework === 'cucumber') {
         return true
     }
 

@@ -19,18 +19,6 @@ import CrashReporter from './crash-reporter.js'
 import logPatcher from './logPatcher.js'
 import { consoleHolder } from './constants.js'
 
-const BSTestOpsPatcher = new logPatcher({})
-// @ts-ignore
-// eslint-disable-next-line no-global-assign
-console = {}
-Object.keys(consoleHolder).forEach(method => {
-    // @ts-ignore
-    console[method] = (...args) => {
-        // @ts-ignore
-        BSTestOpsPatcher[method](...args)
-    }
-})
-
 const log = logger('@wdio/browserstack-service')
 
 export default class BrowserstackService implements Services.ServiceInstance {
@@ -250,6 +238,7 @@ export default class BrowserstackService implements Services.ServiceInstance {
         this._suiteTitle = feature.name
         await this._setSessionName(feature.name)
         await this._setAnnotation(`Feature: ${feature.name}`)
+        await this._insightsHandler?.beforeFeature(uri, feature)
     }
 
     /**
