@@ -1,7 +1,9 @@
 import type { BrowserstackConfig } from './types.js'
-import { createRequire } from 'node:module'
-const require = createRequire(import.meta.url)
-const { version: bstackServiceVersion } = require('../package.json')
+// import { createRequire } from 'node:module'
+// const customRequire = createRequire(import.meta.url)
+// @ts-ignore
+// import { version as bstackServiceVersion } from '../package.json' assert { type: 'json' }
+import { version as bstackServiceVersion } from 'package.json'
 
 export const BROWSER_DESCRIPTION = [
     'device',
