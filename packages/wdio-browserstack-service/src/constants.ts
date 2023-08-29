@@ -1,7 +1,9 @@
 import type { BrowserstackConfig } from './types.js'
-import { createRequire } from 'node:module'
-const require = createRequire(import.meta.url)
-const { version: bstackServiceVersion } = require('../package.json')
+// import { createRequire } from 'node:module'
+// const customRequire = createRequire(import.meta.url)
+// @ts-ignore
+// import { version as bstackServiceVersion } from '../package.json' assert { type: 'json' }
+import { version as bstackServiceVersion } from 'package.json'
 
 export const BROWSER_DESCRIPTION = [
     'device',
@@ -25,6 +27,8 @@ export const DEFAULT_OPTIONS: Partial<BrowserstackConfig> = {
     setSessionStatus: true,
     testObservability: true
 }
+
+export const consoleHolder: typeof console = Object.assign({}, console)
 
 export const DATA_ENDPOINT = 'https://collector-observability.browserstack.com'
 export const DATA_EVENT_ENDPOINT = 'api/v1/event'
