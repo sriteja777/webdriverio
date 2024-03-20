@@ -162,7 +162,8 @@
         },
         "visual-testing/test-output",
         "visual-testing/considerations",
-        "visual-testing/faq"
+        "visual-testing/faq",
+        "visual-testing/percy"
       ],
       "link": {
         "type": "doc",
