@@ -1,12 +1,20 @@
-import { getErrorString, stopBuildUpstream } from './util.js'
+import { getBrowserStackKey, getErrorString, stopBuildUpstream, uploadLogs } from './util.js'
 import { BStackLogger } from './bstackLogger.js'
 import fs from 'node:fs'
 import { fireFunnelRequest } from './instrumentation/funnelInstrumentation.js'
 import { TESTOPS_BUILD_ID_ENV, TESTOPS_JWT_ENV } from './constants.js'
+import { format } from 'node:util'
 
 export default class BStackCleanup {
     static async startCleanup() {
         try {
+            let config = null
+            if (process.argv.includes('--config')) {
+                const index = process.argv.indexOf('--config')
+                const filePath = process.argv[index + 1]
+                config = this.getDataAndRemoveFile(filePath)
+            }
+
             // Get funnel data object from saved file
             const funnelDataCleanup = process.argv.includes('--funnelData')
             let funnelData = null
@@ -23,11 +31,20 @@ export default class BStackCleanup {
             if (funnelDataCleanup && funnelData) {
                 await this.sendFunnelData(funnelData)
             }
+
+            if (process.argv.includes('--logs')) {
+                await this.sendLogs(config)
+            }
         } catch (err) {
             const error = err as string
             BStackLogger.error(error)
         }
     }
+
+    static async initializeConfig() {
+
+    }
+
     static async executeObservabilityCleanup(funnelData: any) {
         if (!process.env[TESTOPS_JWT_ENV]) {
             return
@@ -86,11 +103,46 @@ export default class BStackCleanup {
         return data
     }
 
+    static getDataAndRemoveFile(filePath: string) {
+        if (!filePath) {
+            return null
+        }
+
+        const content = fs.readFileSync(filePath, 'utf8')
+
+        const data = JSON.parse(content)
+        this.removeFunnelDataFile(filePath)
+        return data
+    }
+
     static removeFunnelDataFile(filePath?: string) {
         if (!filePath) {
             return
         }
         fs.rmSync(filePath, { force: true })
+    }
+
+    static async sendLogs(config: any) {
+        if (!config) {
+            BStackLogger.debug('Missing config to send logs')
+            return
+        }
+
+        if (!config.userName || !config.accessKey) {
+            BStackLogger.debug('Missing credentials to send logs')
+            return
+        }
+
+        if (!config.logsUUID) {
+            BStackLogger.debug('Missing logs identifier to send logs')
+        }
+
+        try {
+            const response = await uploadLogs(config.userName, getBrowserStackKey(config.accessKey), config.logsUUID)
+            BStackLogger.logToFile(`Response - ${format(response)}`, 'debug')
+        } catch (error) {
+            BStackLogger.debug(`Failed to upload BrowserStack WDIO Service logs ${error}`)
+        }
     }
 }
 

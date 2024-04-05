@@ -222,15 +222,15 @@ export default class BrowserstackService implements Services.ServiceInstance {
         }
     }
 
-    async beforeHook (test: Frameworks.Test|CucumberHook, context: any) {
+    beforeHook (test: Frameworks.Test|CucumberHook, context: any) {
         if (this._config.framework !== 'cucumber') {
             this._currentTest = test as Frameworks.Test // not update currentTest when this is called for cucumber step
         }
-        await this._insightsHandler?.beforeHook(test, context)
+        this._insightsHandler?.beforeHook(test, context)
     }
 
-    async afterHook(test: Frameworks.Test | CucumberHook, context: unknown, result: Frameworks.TestResult) {
-        await this._insightsHandler?.afterHook(test, result)
+    afterHook(test: Frameworks.Test | CucumberHook, context: unknown, result: Frameworks.TestResult) {
+        this._insightsHandler?.afterHook(test, result)
     }
 
     async beforeTest (test: Frameworks.Test) {
@@ -250,7 +250,7 @@ export default class BrowserstackService implements Services.ServiceInstance {
 
         await this._setSessionName(suiteTitle, test)
         await this._setAnnotation(`Test: ${test.fullName ?? test.title}`)
-        await this._insightsHandler?.beforeTest(test)
+        this._insightsHandler?.beforeTest(test)
         await this._accessibilityHandler?.beforeTest(suiteTitle, test)
     }
 
@@ -260,7 +260,7 @@ export default class BrowserstackService implements Services.ServiceInstance {
         if (!passed) {
             this._failReasons.push((error && error.message) || 'Unknown Error')
         }
-        await this._insightsHandler?.afterTest(test, results)
+        this._insightsHandler?.afterTest(test, results)
         await this._percyHandler?.afterTest()
         await this._accessibilityHandler?.afterTest(this._suiteTitle, test)
     }
@@ -305,7 +305,7 @@ export default class BrowserstackService implements Services.ServiceInstance {
         this._suiteTitle = feature.name
         await this._setSessionName(feature.name)
         await this._setAnnotation(`Feature: ${feature.name}`)
-        await this._insightsHandler?.beforeFeature(uri, feature)
+        this._insightsHandler?.beforeFeature(uri, feature)
     }
 
     /**
@@ -314,7 +314,7 @@ export default class BrowserstackService implements Services.ServiceInstance {
      */
     async beforeScenario (world: ITestCaseHookParameter) {
         this._currentTest = world
-        await this._insightsHandler?.beforeScenario(world)
+        this._insightsHandler?.beforeScenario(world)
         await this._accessibilityHandler?.beforeScenario(world)
         const scenarioName = world.pickle.name || 'unknown scenario'
         await this._setAnnotation(`Scenario: ${scenarioName}`)
@@ -339,18 +339,18 @@ export default class BrowserstackService implements Services.ServiceInstance {
             this._failReasons.push(exception)
         }
 
-        await this._insightsHandler?.afterScenario(world)
+        this._insightsHandler?.afterScenario(world)
         await this._percyHandler?.afterScenario()
         await this._accessibilityHandler?.afterScenario(world)
     }
 
     async beforeStep (step: Frameworks.PickleStep, scenario: Pickle) {
-        await this._insightsHandler?.beforeStep(step, scenario)
+        this._insightsHandler?.beforeStep(step, scenario)
         await this._setAnnotation(`Step: ${step.keyword}${step.text}`)
     }
 
     async afterStep (step: Frameworks.PickleStep, scenario: Pickle, result: Frameworks.PickleResult) {
-        await this._insightsHandler?.afterStep(step, scenario, result)
+        this._insightsHandler?.afterStep(step, scenario, result)
     }
 
     async onReload(oldSessionId: string, newSessionId: string) {
