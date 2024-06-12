@@ -1,6 +1,5 @@
 import got from 'got'
 import { FormData } from 'formdata-node'
-import { v4 as uuidv4 } from 'uuid'
 
 import fs from 'node:fs'
 import path from 'node:path'
@@ -516,6 +515,7 @@ export default class BrowserstackLauncherService implements Services.ServiceInst
         const clientBuildUuid = this._getClientBuildUuid()
 
         const response = await uploadLogs(getBrowserStackUser(this._config), getBrowserStackKey(this._config), clientBuildUuid)
+        this.browserStackConfig.logsSent = true
         BStackLogger.logToFile(`Response - ${format(response)}`, 'debug')
     }
 
@@ -775,11 +775,16 @@ export default class BrowserstackLauncherService implements Services.ServiceInst
     }
 
     _getClientBuildUuid() {
-        if (process.env[TESTOPS_BUILD_ID_ENV]) {
-            return process.env[TESTOPS_BUILD_ID_ENV]
-        }
-        const uuid = uuidv4()
-        BStackLogger.logToFile(`If facing any issues, please contact BrowserStack support with the Build Run Id - ${uuid}`, 'info')
-        return uuid
+        return this.browserStackConfig.getClientBuildUUID()
+
+        // if (process.env[TESTOPS_BUILD_ID_ENV]) {
+        //     return process.env[TESTOPS_BUILD_ID_ENV]
+        // }
+        // const uuid = uuidv4()
+        //
+        // this.browserStackConfig.clientBuildUUID =
+        //
+        // BStackLogger.logToFile(`If facing any issues, please contact BrowserStack support with the Build Run Id - ${uuid}`, 'info')
+        // return uuid
     }
 }

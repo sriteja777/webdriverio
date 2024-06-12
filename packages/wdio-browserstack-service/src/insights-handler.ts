@@ -153,7 +153,7 @@ class _InsightsHandler {
         }
     }
 
-    async sendScenarioObjectSkipped(scenario: Scenario, feature: Feature, uri: string) {
+    sendScenarioObjectSkipped(scenario: Scenario, feature: Feature, uri: string) {
         const testMetaData: TestMeta = {
             uuid: uuidv4(),
             startedAt: (new Date()).toISOString(),
@@ -178,7 +178,7 @@ class _InsightsHandler {
         this.listener.testFinished(this.getTestRunDataForCucumber(null, 'TestRunSkipped', testMetaData))
     }
 
-    async processCucumberHook(test: CucumberHook|undefined, params: CucumberHookParams, result?: Frameworks.TestResult) {
+    processCucumberHook(test: CucumberHook|undefined, params: CucumberHookParams, result?: Frameworks.TestResult) {
         const hookType = this.getCucumberHookType(test)
         if (!hookType) {
             return
@@ -210,22 +210,22 @@ class _InsightsHandler {
                 if (!feature) {
                     return
                 }
-                feature.children.map(async (childObj: FeatureChild) => {
+                feature.children.map((childObj: FeatureChild) => {
                     if (childObj.rule) {
-                        childObj.rule.children.map(async (scenarioObj: FeatureChild) => {
+                        childObj.rule.children.map((scenarioObj: FeatureChild) => {
                             if (scenarioObj.scenario) {
-                                await this.sendScenarioObjectSkipped(scenarioObj.scenario, feature, uri as string)
+                                this.sendScenarioObjectSkipped(scenarioObj.scenario, feature, uri as string)
                             }
                         })
                     } else if (childObj.scenario) {
-                        await this.sendScenarioObjectSkipped(childObj.scenario, feature, uri as string)
+                        this.sendScenarioObjectSkipped(childObj.scenario, feature, uri as string)
                     }
                 })
             }
         }
     }
 
-    async beforeHook (test: Frameworks.Test|CucumberHook|undefined, context: any) {
+    beforeHook (test: Frameworks.Test|CucumberHook|undefined, context: any) {
         if (!frameworkSupportsHook('before', this._framework)) {
             return
         }
@@ -233,7 +233,7 @@ class _InsightsHandler {
 
         if (this._framework === 'cucumber') {
             test = test as CucumberHook|undefined
-            await this.processCucumberHook(test, { event: 'before', hookUUID })
+            this.processCucumberHook(test, { event: 'before', hookUUID })
             return
         }
 
@@ -249,12 +249,12 @@ class _InsightsHandler {
         this.listener.hookStarted(this.getRunData(test, 'HookRunStarted'))
     }
 
-    async afterHook (test: Frameworks.Test|CucumberHook|undefined, result: Frameworks.TestResult) {
+    afterHook (test: Frameworks.Test|CucumberHook|undefined, result: Frameworks.TestResult) {
         if (!frameworkSupportsHook('after', this._framework)) {
             return
         }
         if (this._framework === 'cucumber') {
-            await this.processCucumberHook(test as CucumberHook|undefined, { event: 'after' }, result)
+            this.processCucumberHook(test as CucumberHook|undefined, { event: 'after' }, result)
             return
         }
 
@@ -278,7 +278,7 @@ class _InsightsHandler {
             This won't be needed for `afterAll`, as even if `afterAll` fails all the tests that we need are already run by then, so we don't need to send the stats for them separately
          */
         if (!result.passed && (hookType === 'BEFORE_EACH' || hookType === 'BEFORE_ALL' || hookType === 'AFTER_EACH')) {
-            const sendTestSkip = async (skippedTest: any) => {
+            const sendTestSkip = (skippedTest: any) => {
 
                 // We only need to send the tests that whose state is not determined yet. The state of tests which is determined will already be sent.
                 if (skippedTest.state === undefined) {
@@ -295,16 +295,16 @@ class _InsightsHandler {
             /*
                 Recursively send the tests as skipped for all suites below the hook. This is to handle nested describe blocks
              */
-            const sendSuiteSkipped = async (suite: any) => {
+            const sendSuiteSkipped = (suite: any) => {
                 for (const skippedTest of suite.tests) {
-                    await sendTestSkip(skippedTest)
+                    sendTestSkip(skippedTest)
                 }
                 for (const skippedSuite of suite.suites) {
-                    await sendSuiteSkipped(skippedSuite)
+                    sendSuiteSkipped(skippedSuite)
                 }
             }
 
-            await sendSuiteSkipped(test.ctx.test.parent)
+            sendSuiteSkipped(test.ctx.test.parent)
         }
     }
 
@@ -353,7 +353,7 @@ class _InsightsHandler {
         return testData
     }
 
-    async beforeTest (test: Frameworks.Test) {
+    beforeTest (test: Frameworks.Test) {
         const uuid = uuidv4()
         this._currentTest = {
             test, uuid
@@ -369,7 +369,7 @@ class _InsightsHandler {
         this.listener.testStarted(this.getRunData(test, 'TestRunStarted'))
     }
 
-    async afterTest (test: Frameworks.Test, result: Frameworks.TestResult) {
+    afterTest (test: Frameworks.Test, result: Frameworks.TestResult) {
         if (this._framework !== 'mocha') {
             return
         }
@@ -386,13 +386,13 @@ class _InsightsHandler {
       * Cucumber Only
       */
 
-    async beforeFeature(uri: string, feature: Feature) {
+    beforeFeature(uri: string, feature: Feature) {
         this._cucumberData.scenariosStarted = false
         this._cucumberData.feature = feature
         this._cucumberData.uri = uri
     }
 
-    async beforeScenario (world: ITestCaseHookParameter) {
+    beforeScenario (world: ITestCaseHookParameter) {
         const uuid = uuidv4()
         this._currentTest = {
             uuid
@@ -427,12 +427,12 @@ class _InsightsHandler {
         this.listener.testStarted(this.getTestRunDataForCucumber(world, 'TestRunStarted'))
     }
 
-    async afterScenario (world: ITestCaseHookParameter) {
+    afterScenario (world: ITestCaseHookParameter) {
         this._cucumberData.scenario = undefined
         this.listener.testFinished(this.getTestRunDataForCucumber(world, 'TestRunFinished'))
     }
 
-    async beforeStep (step: Frameworks.PickleStep, scenario: Pickle) {
+    beforeStep (step: Frameworks.PickleStep, scenario: Pickle) {
         this._cucumberData.stepsStarted = true
         this._cucumberData.steps.push(step)
         const uniqueId = getUniqueIdentifierForCucumber({ pickle: scenario } as ITestCaseHookParameter)
@@ -452,7 +452,7 @@ class _InsightsHandler {
         this._tests[uniqueId] = testMetaData
     }
 
-    async afterStep (step: Frameworks.PickleStep, scenario: Pickle, result: Frameworks.PickleResult) {
+    afterStep (step: Frameworks.PickleStep, scenario: Pickle, result: Frameworks.PickleResult) {
         this._cucumberData.steps.pop()
 
         const uniqueId = getUniqueIdentifierForCucumber({ pickle: scenario } as ITestCaseHookParameter)
@@ -484,7 +484,7 @@ class _InsightsHandler {
      * misc methods
      */
 
-    appendTestItemLog = async (stdLog: StdLog) => {
+    appendTestItemLog = (stdLog: StdLog) => {
         try {
             if (this._currentHook.uuid && !this._currentHook.finished && (this._framework === 'mocha' || this._framework === 'cucumber')) {
                 stdLog.hook_run_uuid = this._currentHook.uuid

@@ -5,6 +5,7 @@ import { saveFunnelData } from './instrumentation/funnelInstrumentation.js'
 import { fileURLToPath } from 'node:url'
 import { TESTOPS_JWT_ENV } from './constants.js'
 import { BStackLogger } from './bstackLogger.js'
+import fs from 'node:fs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -31,6 +32,17 @@ export function shouldCallCleanup(config: BrowserStackConfig): string[] {
     if (config.userName && config.accessKey && !config.funnelDataSent) {
         const savedFilePath = saveFunnelData('SDKTestSuccessful', config)
         args.push('--funnelData', savedFilePath)
+    }
+
+    if (config.userName && config.accessKey && !config.logsSent) {
+        args.push('--logs')
+    }
+
+    if (args.length !== 0) {
+        const filePath = path.join(BStackLogger.logFolderPath, 'cleanupConfig.json')
+        fs.writeFileSync(filePath, JSON.stringify(config.toJSON()))
+
+        args.push('--config', )
     }
 
     return args

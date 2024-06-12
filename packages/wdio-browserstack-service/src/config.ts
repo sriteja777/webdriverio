@@ -2,6 +2,8 @@ import type { AppConfig, BrowserstackConfig } from './types.js'
 import type { Options } from '@wdio/types'
 import TestOpsConfig from './testOps/testOpsConfig.js'
 import { isUndefined } from './util.js'
+import { TESTOPS_BUILD_ID_ENV } from './constants.js'
+import { v4 as uuidv4 } from 'uuid'
 
 class BrowserStackConfig {
     static getInstance(options?: BrowserstackConfig & Options.Testrunner, config?: Options.Testrunner): BrowserStackConfig {
@@ -24,6 +26,9 @@ class BrowserStackConfig {
     public appAutomate: boolean
     public automate: boolean
     public funnelDataSent: boolean = false
+    public logsSent: boolean = false
+    public logsUUID?: string
+    public clientBuildUUID?: string
 
     private constructor(options: BrowserstackConfig & Options.Testrunner, config: Options.Testrunner) {
         this.framework = config.framework
@@ -41,6 +46,31 @@ class BrowserStackConfig {
     sentFunnelData() {
         this.funnelDataSent = true
     }
+
+    getConfigForCleanup() {
+        return {
+            userName: this.userName,
+            accessKey: this.accessKey,
+            clientBuildUUID: this.userName,
+        }
+    }
+
+    getClientBuildUUID() {
+        if (this.clientBuildUUID) {
+            return this.clientBuildUUID
+        }
+        if (process.env[TESTOPS_BUILD_ID_ENV]) {
+            this.clientBuildUUID = process.env[TESTOPS_BUILD_ID_ENV]
+        }
+
+        this.clientBuildUUID = uuidv4()
+        return this.clientBuildUUID
+
+    }
+
+    // static fromJSON() {
+    //     return new BrowserStackConfig()
+    // }
 
 }
 
