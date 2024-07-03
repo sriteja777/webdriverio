@@ -7,7 +7,8 @@
 </p>
 
 <p align="center">
-    Next-gen browser and mobile automation test framework for Node.js.
+    Next-gen browser and mobile automation test framework for Node.js. check tests
+    
 </p>
 
 <p align="center">
